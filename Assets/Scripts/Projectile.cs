@@ -12,10 +12,12 @@ public class Projectile : MonoBehaviour
 
     [Header("Gameplay")]
     public bool isObstacle = false;
+    public bool isHologran = false; // 🆕 Nouveau type
     public int targetScore = 10;
     public int obstaclePenalty = -10;
+    public int hologranPenalty = -5; // 🆕 Peut ajuster le score du hologran
     [Tooltip("Vitesse minimale pour valider un coup")]
-    public float requiredSpeed = 0.3f; // abaissé pour faciliter les tests
+    public float requiredSpeed = 0.3f;
 
     [Header("Impact Feedback")]
     public GameObject impactEffectPrefab;
@@ -62,11 +64,16 @@ public class Projectile : MonoBehaviour
         if (punch != null)
             Debug.Log($"💨 Vitesse de la main: {punch.speed:F2} m/s");
 
-        // Gestion score
+        // 🧠 Gestion des différents types de projectiles
         if (isObstacle)
         {
             gm?.AddScore(obstaclePenalty);
             Debug.Log($"❌ OBSTACLE TOUCHÉ ! Score: {gm?.GetScore()}");
+        }
+        else if (isHologran)
+        {
+            gm?.AddScore(hologranPenalty);
+            Debug.Log($"🌈 HOLOGRAN TOUCHÉ ! {hologranPenalty} points — Score total: {gm?.GetScore()}");
         }
         else if (punch != null && punch.speed >= requiredSpeed)
         {
@@ -107,7 +114,6 @@ public class Projectile : MonoBehaviour
     }
 
 #if UNITY_XR_MANAGEMENT
-    // ✅ Compatible XR Interaction Toolkit 3.0+
     void TrySendHaptic(Collider hand)
     {
         var controller = hand.GetComponent<XRController>();
