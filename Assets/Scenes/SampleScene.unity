@@ -579,14 +579,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 722f9ae02e114954384d8b85b5fd7538, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetPrefab: {fileID: 7543462508368960444, guid: f0e7d330c1eefd347afcd0fa58da3fe3, type: 3}
-  obstaclePrefab: {fileID: 7960449665348501923, guid: 721f0ade923b0e54c99194bcc6c4f8e0, type: 3}
-  hologranPrefab: {fileID: 0}
+  targetRightPrefab: {fileID: 7558888332669451250, guid: 28cc181aa13b41d4aad7316d929e70a2, type: 3}
+  targetLeftPrefab: {fileID: 2564163014408509088, guid: 27510421d5d13d84ca7e43e195da26ea, type: 3}
+  obstaclePrefab: {fileID: 6777015382148445722, guid: 8be0922d93081ae49b3f85ad279fb647, type: 3}
   spawnInterval: 2
   obstacleChance: 30
-  hologranChance: 20
+  horizontalOffset: 0.2
   projectileSpeed: 3
   lifeTime: 5
+  tiltAngle: 45
 --- !u!4 &813593124
 Transform:
   m_ObjectHideFlags: 0
