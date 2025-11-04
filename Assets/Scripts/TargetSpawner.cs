@@ -13,11 +13,15 @@ public class TargetSpawner : MonoBehaviour
     
     [Tooltip("% chance d'obstacle (0-100)")]
     [Range(0, 100)]
-    public float obstacleChance = 100f;
+    public float obstacleChance = 30f;
     
     [Header("Movement")]
     public float projectileSpeed = 3f;
     public float lifeTime = 5f;
+    
+    [Header("Rotation")]
+    [Tooltip("Angle d'inclinaison fixe sur l'axe Z (sera +45 ou -45)")]
+    public float tiltAngle = 45f;
     
     void Start()
     {
@@ -58,12 +62,23 @@ public class TargetSpawner : MonoBehaviour
         
         Debug.Log($"[OK] Prefab found: {prefab.name}");
         
-        // Créer l'objet
-        GameObject obj = Instantiate(prefab, transform.position, Quaternion.identity);
+        // Rotation fixe à +45 ou -45 sur axe Z pour obstacles
+        Quaternion spawnRotation = Quaternion.identity;
+        if (spawnObstacle)
+        {
+            // Choisir aléatoirement entre +45 et -45
+            float finalAngle = Random.value > 0.5f ? tiltAngle : -tiltAngle;
+            spawnRotation = Quaternion.Euler(0, 0, finalAngle);
+            Debug.Log($"[ROTATION] Obstacle incliné à {finalAngle} degrés sur axe Z");
+        }
+        
+        // Créer l'objet avec rotation
+        GameObject obj = Instantiate(prefab, transform.position, spawnRotation);
         
         // === DEBUG DÉTAILLÉ ===
         Debug.Log($"[CREATED] Object: {obj.name}");
         Debug.Log($"   Position: {obj.transform.position}");
+        Debug.Log($"   Rotation: {obj.transform.rotation.eulerAngles}");
         Debug.Log($"   Active: {obj.activeSelf}");
         Debug.Log($"   Children: {obj.transform.childCount}");
         
