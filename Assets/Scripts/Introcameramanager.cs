@@ -5,190 +5,190 @@ using System.Collections;
 public class IntroCameraManager : MonoBehaviour
 {
     [Header("Cameras")]
-    [Tooltip("Caméra qui filme d'en haut pendant le mouvement du shuttle")]
-    public Camera overheadCamera;
-    
-    [Tooltip("XR Origin (caméra VR) qui prend le relais après")]
+    public Camera startMenuCamera;      // Caméra fixe pour le menu START
+    public Camera overheadCamera;       // Caméra qui suit le shuttle
+    public Camera mainCamera;           // Caméra VR gameplay
     public GameObject xrOrigin;
     
-    [Header("Shuttle Reference")]
-    [Tooltip("Le shuttle à surveiller")]
+    [Header("UI")]
+    public GameObject startButton;
+    public KeyCode startKey = KeyCode.Space;
+    
+    [Header("Shuttle")]
     public ShuttleIntroMovement shuttleScript;
     
-    [Header("Transition Settings")]
-    [Tooltip("Délai après l'arrêt du shuttle avant de changer de caméra")]
-    public float delayBeforeSwitch = 1f;
-    
-    [Tooltip("Durée du fondu noir entre les caméras")]
-    public float fadeDuration = 1f;
-    
-    [Header("Player Positioning")]
-    [Tooltip("Position où placer le joueur VR après le switch")]
-    public Transform playerStartPosition;
+    [Header("Positions")]
+    public Transform playerFinalPosition;  // Position finale sur la plateforme
     
     private CanvasGroup fadePanel;
-    private bool hasSwitched = false;
+    private bool hasStarted = false;
 
     void Start()
     {
-        // Configure les caméras au démarrage
-        SetupCameras();
-        
-        // Crée le panel de fondu
+        // Au début: StartMenuCamera active
+        if (startMenuCamera != null) startMenuCamera.enabled = true;
+        if (overheadCamera != null) overheadCamera.enabled = false;
+        if (mainCamera != null) mainCamera.enabled = false;
+
+        // XR Origin peut être désactivé pendant le menu
+        if (xrOrigin != null) xrOrigin.SetActive(false);
+
+        if (startButton != null) startButton.SetActive(true);
+
+        // CRÉE le fade panel
         CreateFadePanel();
-        
-        // S'abonne à l'événement de rotation du shuttle
+
+        // Subscribe au shuttle event
         if (shuttleScript != null)
         {
-            shuttleScript.onRotationComplete.AddListener(OnShuttleRotationComplete);
-            Debug.Log("Subscribed to shuttle rotation complete event!");
+            shuttleScript.onRotationComplete.AddListener(OnShuttleComplete);
+            Debug.Log("✅ Subscribed to shuttle complete event");
         }
-        else
+
+        Debug.Log("🎮 START MENU - Press SPACE to begin!");
+    }
+
+    void Update()
+    {
+        if (!hasStarted && Input.GetKeyDown(startKey))
         {
-            Debug.LogError("ShuttleScript not assigned! Camera won't switch automatically.");
+            OnStartPressed();
         }
     }
 
-   void SetupCameras()
-{
-    Debug.Log("=== Setting up cameras ===");
-    
-    // Active UNIQUEMENT la caméra overhead
-    if (overheadCamera != null)
+    public void OnStartPressed()
     {
-        overheadCamera.enabled = true;
-        Debug.Log("✅ OverheadCamera activated!");
-    }
-    else
-    {
-        Debug.LogError("❌ OverheadCamera is not assigned!");
-    }
-    
-    // Désactive la VR complètement (this will disable all its child cameras too)
-    if (xrOrigin != null)
-    {
-        xrOrigin.SetActive(false);
-        Debug.Log("⏸️ XR Origin deactivated!");
-    }
-    else
-    {
-        Debug.LogError("❌ XR Origin is not assigned!");
-    }
-}
-    void CreateFadePanel()
-    {
-        // Crée un Canvas pour le fondu noir
-        GameObject canvasObj = new GameObject("FadeCanvas");
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 1000;
+        if (hasStarted) return;
+        hasStarted = true;
         
-        GameObject panelObj = new GameObject("FadePanel");
-        panelObj.transform.SetParent(canvasObj.transform);
-        
-        Image image = panelObj.AddComponent<Image>();
-        image.color = Color.black;
-        
-        RectTransform rect = panelObj.GetComponent<RectTransform>();
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-        
-        fadePanel = panelObj.AddComponent<CanvasGroup>();
-        fadePanel.alpha = 0f;
-        fadePanel.blocksRaycasts = false;
-        
-        DontDestroyOnLoad(canvasObj);
+        Debug.Log("🚀 START pressed - Beginning transportation!");
+        StartCoroutine(TransportationSequence());
     }
 
-    // Appelé automatiquement quand le shuttle finit sa rotation
-    void OnShuttleRotationComplete()
+    IEnumerator TransportationSequence()
     {
-        Debug.Log("Shuttle rotation complete! Starting camera switch...");
-        StartCoroutine(WaitAndSwitch());
-    }
-
-    IEnumerator WaitAndSwitch()
-    {
-        // Attend le délai avant de switcher
-        yield return new WaitForSeconds(delayBeforeSwitch);
+        // Cache le bouton
+        if (startButton != null)
+        {
+            startButton.SetActive(false);
+        }
         
-        // Change de caméra
-        yield return StartCoroutine(SwitchToVRCamera());
-    }
-
-    IEnumerator SwitchToVRCamera()
-    {
-        if (hasSwitched)
-            yield break;
-        
-        hasSwitched = true;
-        
-        Debug.Log("Switching from overhead camera to VR camera...");
-        
-        // Fondu vers le noir
+        // Fade to black depuis le menu
         yield return StartCoroutine(FadeToBlack());
         
-        // Désactive la caméra overhead
-        if (overheadCamera != null)
-            overheadCamera.enabled = false;
+        // Switch vers overhead camera
+        if (startMenuCamera != null) startMenuCamera.enabled = false;
+        if (overheadCamera != null) overheadCamera.enabled = true;
         
-        // Active et positionne la VR
+        // Fade from black
+        yield return StartCoroutine(FadeFromBlack());
+        
+        // Démarre le shuttle (représente le "voyage")
+        if (shuttleScript != null)
+        {
+            shuttleScript.StartIntroSequence();
+        }
+        
+        Debug.Log("📹 Transportation in progress - Overhead view!");
+    }
+
+    void OnShuttleComplete()
+    {
+        Debug.Log("🎬 Transportation complete - Arriving at platform!");
+        StartCoroutine(ArriveAtPlatform());
+    }
+
+    IEnumerator ArriveAtPlatform()
+    {
+        yield return new WaitForSeconds(1f);
+        
+        // Fade to black
+        yield return StartCoroutine(FadeToBlack());
+        
+        // Active et positionne le XR Origin
         if (xrOrigin != null)
         {
             xrOrigin.SetActive(true);
             
-            // Place le joueur à la position de départ
-            if (playerStartPosition != null)
+            if (playerFinalPosition != null)
             {
-                xrOrigin.transform.position = playerStartPosition.position;
-                xrOrigin.transform.rotation = playerStartPosition.rotation;
+                xrOrigin.transform.position = playerFinalPosition.position;
+                xrOrigin.transform.rotation = playerFinalPosition.rotation;
             }
         }
         
-        // Fondu depuis le noir
+        // Switch vers Main Camera (VR)
+        if (overheadCamera != null) overheadCamera.enabled = false;
+        if (mainCamera != null) mainCamera.enabled = true;
+        
+        // Fade from black
         yield return StartCoroutine(FadeFromBlack());
         
-        Debug.Log("Camera switch complete! VR mode active.");
+        Debug.Log("✅ Arrived on platform - Gameplay starts!");
+    }
+
+    void CreateFadePanel()
+    {
+        // Crée un Canvas en Screen Space Overlay
+        GameObject canvas = new GameObject("FadeCanvas");
+        Canvas c = canvas.AddComponent<Canvas>();
+        c.renderMode = RenderMode.ScreenSpaceOverlay;
+        c.sortingOrder = 1000;
+
+        // Ajoute le CanvasScaler pour que ça scale correctement
+        CanvasScaler scaler = canvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+
+        // Crée le panel noir
+        GameObject panel = new GameObject("FadePanel");
+        panel.transform.SetParent(canvas.transform, false); // FALSE est important!
+
+        // Ajoute l'Image
+        Image img = panel.AddComponent<Image>();
+        img.color = Color.black;
+
+        // Configure le RectTransform pour remplir TOUT l'écran
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0);  // Coin bas-gauche
+        rect.anchorMax = new Vector2(1, 1);  // Coin haut-droit
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;  // Important!
+
+        // Ajoute le CanvasGroup
+        fadePanel = panel.AddComponent<CanvasGroup>();
+        fadePanel.alpha = 0f;
+        fadePanel.blocksRaycasts = false;
+
+        DontDestroyOnLoad(canvas);
+
+        Debug.Log("✅ Fade panel created - covers full screen");
     }
 
     IEnumerator FadeToBlack()
     {
-        float elapsed = 0f;
-        
-        while (elapsed < fadeDuration)
+        float t = 0f;
+        float duration = 1f;
+        while (t < duration)
         {
-            elapsed += Time.deltaTime;
-            fadePanel.alpha = Mathf.Lerp(0f, 1f, elapsed / fadeDuration);
+            t += Time.deltaTime;
+            fadePanel.alpha = t / duration;
             yield return null;
         }
-        
         fadePanel.alpha = 1f;
     }
 
     IEnumerator FadeFromBlack()
     {
-        float elapsed = 0f;
-        
-        while (elapsed < fadeDuration)
+        float t = 0f;
+        float duration = 1f;
+        while (t < duration)
         {
-            elapsed += Time.deltaTime;
-            fadePanel.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+            t += Time.deltaTime;
+            fadePanel.alpha = 1f - (t / duration);
             yield return null;
         }
-        
         fadePanel.alpha = 0f;
     }
-    
-    // Méthode publique pour forcer le switch (utile pour les tests)
-    public void ForceSwitchToVR()
-    {
-        if (!hasSwitched)
-        {
-            StopAllCoroutines();
-            StartCoroutine(SwitchToVRCamera());
-        }
 }
-}
-
