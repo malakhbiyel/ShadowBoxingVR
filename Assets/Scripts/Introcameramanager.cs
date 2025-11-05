@@ -49,38 +49,32 @@ public class IntroCameraManager : MonoBehaviour
         }
     }
 
-    void SetupCameras()
+   void SetupCameras()
+{
+    Debug.Log("=== Setting up cameras ===");
+    
+    // Active UNIQUEMENT la caméra overhead
+    if (overheadCamera != null)
     {
-        // Désactive TOUTES les caméras d'abord
-        Camera[] allCameras = FindObjectsOfType<Camera>();
-        foreach (Camera cam in allCameras)
-        {
-            cam.enabled = false;
-        }
-        
-        // Active UNIQUEMENT la caméra overhead
-        if (overheadCamera != null)
-        {
-            overheadCamera.enabled = true;
-            Debug.Log("OverheadCamera activated!");
-        }
-        else
-        {
-            Debug.LogError("OverheadCamera is not assigned!");
-        }
-        
-        // Désactive la VR complètement
-        if (xrOrigin != null)
-        {
-            xrOrigin.SetActive(false);
-            Debug.Log("XR Origin deactivated!");
-        }
-        else
-        {
-            Debug.LogError("XR Origin is not assigned!");
-        }
+        overheadCamera.enabled = true;
+        Debug.Log("✅ OverheadCamera activated!");
     }
-
+    else
+    {
+        Debug.LogError("❌ OverheadCamera is not assigned!");
+    }
+    
+    // Désactive la VR complètement (this will disable all its child cameras too)
+    if (xrOrigin != null)
+    {
+        xrOrigin.SetActive(false);
+        Debug.Log("⏸️ XR Origin deactivated!");
+    }
+    else
+    {
+        Debug.LogError("❌ XR Origin is not assigned!");
+    }
+}
     void CreateFadePanel()
     {
         // Crée un Canvas pour le fondu noir
@@ -195,9 +189,6 @@ public class IntroCameraManager : MonoBehaviour
             StopAllCoroutines();
             StartCoroutine(SwitchToVRCamera());
         }
-    }
 }
-
-
-
+}
 
